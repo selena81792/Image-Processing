@@ -1,7 +1,11 @@
 #include <sstream>
+#include <iostream>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <string>
 #include "Image.h"
+
+using namespace cv;
 
 namespace imgrecog {
 	Image::Image(const std::string& path)
@@ -164,6 +168,69 @@ namespace imgrecog {
 		}
 	}
 
+	void Image::cutImage()
+	{
+		cv::Mat _temp;
+		cv::Mat _temp2;
+		cv::Rect firstROI(_image.cols * 0.09, _image.rows * 0.53, _image.cols * 0.81, _image.rows * 0.11); // cut number part
+		_temp = _edge(firstROI);
+		_temp2 = _image(firstROI);
+
+		int top = -1;
+		int bottom = -1;
+		int left = -1;
+		int right = -1;
+		Vec3b *pixel;
+
+		for (int i = 0; i < _temp.rows; ++i){			// find borders
+			pixel = _temp.ptr<Vec3b>(i);
+			for (int j = 0; j < _temp.cols; ++j){
+				if (pixel[j][0] + pixel[j][1] + pixel[j][2] > 384){
+					if (top == -1)
+						top = i;
+					else
+						bottom = i;
+					if (left == -1 || j < left)
+						left = j;
+					else if (j > right)
+						right = j;
+				}
+			}
+		}
+
+		if (top == -1 || bottom == -1 || bottom - top <= 1){	// cannot find any number in the image, error
+			std::stringstream ss;
+			ss << "Error: Could not find numbers in the picture " << _path;
+			throw std::invalid_argument(ss.str());
+		}
+
+		cv::Rect secondROI(left, top, right - left, bottom - top); // cut number part
+		_cut = _temp2(secondROI);
+	}
+
+	void Image::binarization() noexcept
+	{
+		Vec3b *pixel;
+
+		for (int i = 0; i < _cut.rows; ++i){			// find borders
+			pixel = _cut.ptr<Vec3b>(i);
+			for (int j = 0; j < _cut.cols; ++j){
+				if (pixel[j][0] + pixel[j][1] + pixel[j][2] > 384){
+					pixel[j][0] = 0;
+					pixel[j][1] = 0;
+					pixel[j][2] = 0;
+				} else {
+					pixel[j][0] = 255;
+					pixel[j][1] = 255;
+					pixel[j][2] = 255;
+				}
+			}
+		}
+
+		// double scale = float(50)/_cut.size().height;
+		// resize(_cut, _cut, cv::Size(0, 0), scale, scale);
+	}
+
 	void Image::edgeDetection() noexcept
 	{
 		edgeGrayscale();
@@ -171,14 +238,19 @@ namespace imgrecog {
 		edgeGradient();
 		edgeRemoveNonMaxGradient();
 		edgeFilter(20, 25);
+		cutImage();
+		binarization();
 	}
 
 	void Image::show() noexcept
 	{
-		cv::namedWindow("Show image", cv::WINDOW_AUTOSIZE);
-		cv::imshow("Show image", _image);
-		cv::namedWindow("Show edge", cv::WINDOW_AUTOSIZE);
-		cv::imshow("Show edge", _edge);
+		// cv::namedWindow("Show image", cv::WINDOW_AUTOSIZE);
+		// cv::imshow("Show image", _image);
+		// cv::namedWindow("Show edge", cv::WINDOW_AUTOSIZE);
+		// cv::imshow("Show edge", _edge);
+
+		cv::namedWindow(_path, cv::WINDOW_AUTOSIZE);
+		cv::imshow(_path, _cut);
 		cv::waitKey(0);
 	}
 }
