@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include "Image.h"
+#include "opencv2/opencv.hpp"
 
 using namespace cv;
 
@@ -204,12 +205,17 @@ namespace imgrecog {
 			throw std::invalid_argument(ss.str());
 		}
 
+		int allowance = (bottom - top) * 0.25;
+
 		cv::Rect secondROI(left, top, right - left, bottom - top); // cut number part
 		_cut = _temp2(secondROI);
 	}
 
 	void Image::binarization() noexcept
 	{
+		int allowance = _cut.rows * 0.25;		// add some border around text for good individual cut
+		copyMakeBorder(_cut, _cut, allowance, allowance, allowance, allowance, cv::BORDER_REFLECT, cv::Scalar(255, 255, 255));
+
 		Vec3b *pixel;
 
 		for (int i = 0; i < _cut.rows; ++i){			// find borders
@@ -226,9 +232,31 @@ namespace imgrecog {
 				}
 			}
 		}
+	}
 
-		// double scale = float(50)/_cut.size().height;
-		// resize(_cut, _cut, cv::Size(0, 0), scale, scale);
+	void Image::getResult() noexcept
+	{
+		cv::Mat _temp;
+		for (int i = 0; i < 19; ++i){
+			if (i == 4 || i == 9 || i == 14){
+				std::cout << " ";
+			} else {
+				cv::Rect ROI((i * _cut.cols) / 19, 0, _cut.cols / 19, _cut.rows);
+				// here cut individual numbers out
+				_temp = _cut(ROI);
+				std::cout << templateMatching(_temp);
+			}
+		}
+		std::cout << std::endl;
+	}
+
+	int Image::templateMatching(cv::Mat input) noexcept
+	{
+		// template function to match the font and return the correct number
+
+		imshow("input", input);
+
+		return 6;
 	}
 
 	void Image::edgeDetection() noexcept
@@ -240,6 +268,7 @@ namespace imgrecog {
 		edgeFilter(20, 25);
 		cutImage();
 		binarization();
+		getResult();
 	}
 
 	void Image::show() noexcept
