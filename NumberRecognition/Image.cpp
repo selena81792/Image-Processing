@@ -237,6 +237,7 @@ namespace imgrecog {
 	void Image::getResult() noexcept
 	{
 		cv::Mat _temp;
+
 		for (int i = 0; i < 19; ++i){
 			if (i == 4 || i == 9 || i == 14){
 				std::cout << " ";
@@ -244,17 +245,52 @@ namespace imgrecog {
 				cv::Rect ROI((i * _cut.cols) / 19, 0, _cut.cols / 19, _cut.rows);
 				// here cut individual numbers out
 				_temp = _cut(ROI);
-				std::cout << templateMatching(_temp);
+				_temp = resizeNumber(_temp);
+//				std::cout << templateMatching(_temp);
 			}
 		}
 		std::cout << std::endl;
 	}
 
-	int Image::templateMatching(cv::Mat input) noexcept
+	cv::Mat Image::resizeNumber(cv::Mat &input) noexcept
+	{
+		cv::Mat output;
+		int y1 = 0;
+		int y2 = 0;
+		bool found = false;
+		Vec3b* pixel;
+
+		for (int y = 0; y < input.rows && !found; ++y) {
+			pixel = input.ptr<Vec3b>(y);
+			for (int x = 0; x < input.cols; ++x) {
+				if (!pixel[x][0]) {
+					y1 = y;
+					found = true;
+					break;
+				}
+			}
+		}
+		found = false;
+		for (int y = input.rows - 1; y >= 0 && !found; --y) {
+			pixel = input.ptr<Vec3b>(y);
+			for (int x = 0; x < input.cols; ++x) {
+				if (!pixel[x][0]) {
+					y2 = y;
+					found = true;
+					break;
+				}
+			}
+		}
+		int ysize = (y2 - y1) + 1;
+		double ratio = 49.0 / ysize;
+		cv::resize(input, output, cv::Size(), ratio, ratio);
+		return output;
+	}
+
+	int Image::templateMatching(cv::Mat &input) noexcept
 	{
 		// template function to match the font and return the correct number
 
-		imshow("input", input);
 
 		return 6;
 	}

@@ -24,7 +24,8 @@ namespace imgrecog {
 		void cutImage();
 		void binarization() noexcept;
 		void getResult() noexcept;
-		int templateMatching(cv::Mat input) noexcept;
+		cv::Mat resizeNumber(cv::Mat &input) noexcept;
+		int templateMatching(cv::Mat &input) noexcept;
 	public:
 		Image(const std::string& path);
 		~Image() noexcept = default;
