@@ -365,6 +365,7 @@ BOOL CCxImageARDoc::templateMatching(CxImage* src, CxImage* dst) {
 		cv::Mat output;
 		int y1 = 0;
 		int y2 = 0;
+		int x1 = 0;
 		bool found = false;
 		Vec3b* pixel;
 
@@ -389,9 +390,20 @@ BOOL CCxImageARDoc::templateMatching(CxImage* src, CxImage* dst) {
 				}
 			}
 		}
+		x1 = input.cols;
+		for (int y = input.rows - 1; y >= 0; --y) {
+			pixel = input.ptr<Vec3b>(y);
+			for (int x = 0; x < x1; ++x) {
+				if (!pixel[x][0]) {
+					x1 = x;
+					break;
+				}
+			}
+		}
 		int ysize = (y2 - y1) + 1;
 		double ratio = 49.0 / ysize;
-		cv::resize(input, output, cv::Size(), ratio, ratio);
+		auto tmp = input(cv::Rect(x1, y1, 32.0 / ratio, 49.0 / ratio));
+		cv::resize(tmp, output, cv::Size(), ratio, ratio);
 		return output;
 	}
 
