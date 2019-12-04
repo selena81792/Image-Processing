@@ -320,7 +320,11 @@ namespace imgrecog {
 		}
 		int ysize = (y2 - y1) + 1;
 		double ratio = 49.0 / ysize;
-		auto tmp = input(cv::Rect(x1, y1, 32.0 / ratio, 49.0 / ratio));
+		int xsize = 32.0 / ratio;
+		if (xsize + x1 >= input.cols) {
+			xsize = input.cols - x1;
+		}
+		auto tmp = input(cv::Rect(x1, y1, xsize, ysize));
 		cv::resize(tmp, output, cv::Size(), ratio, ratio);
 		return output;
 	}
@@ -378,11 +382,6 @@ namespace imgrecog {
 
 	void Image::show() noexcept
 	{
-		// cv::namedWindow("Show image", cv::WINDOW_AUTOSIZE);
-		// cv::imshow("Show image", _image);
-		// cv::namedWindow("Show edge", cv::WINDOW_AUTOSIZE);
-		// cv::imshow("Show edge", _edge);
-
 		cv::namedWindow(_path, cv::WINDOW_AUTOSIZE);
 		cv::imshow(_path, _cut);
 		cv::waitKey(0);
