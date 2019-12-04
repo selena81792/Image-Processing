@@ -7,6 +7,9 @@
 
 namespace imgrecog {
 	class Image {
+		const std::vector<std::string> _path_templates;
+		const std::vector<cv::Mat> _template_image;
+
 		const std::string _path;
 		cv::Mat _image;
 		cv::Mat _edge;

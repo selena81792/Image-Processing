@@ -2,7 +2,9 @@
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <algorithm>
 #include <string>
+#include <vector>
 #include "Image.h"
 #include "opencv2/opencv.hpp"
 
@@ -10,7 +12,31 @@ using namespace cv;
 
 namespace imgrecog {
 	Image::Image(const std::string& path)
-		: _path(path),
+		: _path_templates({
+					"../templates/0.png",
+					"../templates/1.png",
+					"../templates/2.png",
+					"../templates/3.png",
+					"../templates/4.png",
+					"../templates/5.png",
+					"../templates/6.png",
+					"../templates/7.png",
+					"../templates/8.png",
+					"../templates/9.png"
+		}),
+		_template_image({
+			cv::imread(_path_templates[0], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[1], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[2], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[3], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[4], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[5], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[6], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[7], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[8], cv::IMREAD_GRAYSCALE),
+			cv::imread(_path_templates[9], cv::IMREAD_GRAYSCALE)
+		}),
+		_path(path),
 		_image(cv::imread(path, cv::IMREAD_COLOR)),
 		_edge(_image.clone()),
 		_edgePoint(),
@@ -37,7 +63,7 @@ namespace imgrecog {
 				bgrPixel.val[1] = pixelPtr[y * _edge.cols * cn + x * cn + 1]; // G
 				bgrPixel.val[2] = pixelPtr[y * _edge.cols * cn + x * cn + 2]; // R
 
-				uint8_t grayscale = .2126 * bgrPixel.val[2] + .7152 * bgrPixel.val[1] + .0722 * bgrPixel.val[0];
+				uint8_t grayscale = .2126 * (double)bgrPixel.val[2] + .7152 * (double)bgrPixel.val[1] + .0722 * (double)bgrPixel.val[0];
 
 				pixelPtr[y * _edge.cols * cn + x * cn + 0] = grayscale; // B
 				pixelPtr[y * _edge.cols * cn + x * cn + 1] = grayscale; // G
@@ -56,7 +82,7 @@ namespace imgrecog {
 			{1. / 256., 4. / 256., 6. / 256., 4. / 256., 1. / 256.}
 		};
 
-		size_t offset = kernel.size() / 2;
+		int offset = kernel.size() / 2;
 		auto copy = _edge.clone();
 		uint8_t* pixelCopyPtr = (uint8_t*)copy.data;
 		uint8_t* pixelPtr = (uint8_t*)_edge.data;
@@ -173,7 +199,7 @@ namespace imgrecog {
 	{
 		cv::Mat _temp;
 		cv::Mat _temp2;
-		cv::Rect firstROI(_image.cols * 0.09, _image.rows * 0.53, _image.cols * 0.81, _image.rows * 0.11); // cut number part
+		cv::Rect firstROI((double)_image.cols * 0.09, (double)_image.rows * 0.53, (double)_image.cols * 0.81, (double)_image.rows * 0.11); // cut number part
 		_temp = _edge(firstROI);
 		_temp2 = _image(firstROI);
 
@@ -252,114 +278,6 @@ namespace imgrecog {
 		std::cout << std::endl;
 	}
 
-/*
-CxImage* CCxImageARDoc::AugmentedReality(CxImage* m_pImage){
-	int width = m_pImage->GetWidth();
-	int height = m_pImage->GetHeight();
-
-	CxImage* buffer = Labeling(m_pImage);
-	CxImage* dst = new CxImage;
-	dst->Copy(*m_pImage);
-
-	CxImage* cropImage = new CxImage;
-	CxImage* templateImage = new CxImage;
-	TCHAR* templatePath[4];
-	templatePath[0] = _T("..\\template\\template01.bmp");
-	templatePath[1] = _T("..\\template\\template02.bmp");
-	templatePath[2] = _T("..\\template\\template03.bmp");
-	templatePath[3] = _T("..\\template\\template04.bmp");
-
-	int degree = -1;
-	buffer = Binarization(m_pImage);
-	//buffer = Reverse(buffer);
-
-	for(int i = 1; i < candidate_marker; i++){
-		for(int k = 0; k < 4; k++){
-			templateImage->Load(templatePath[k],FindType(templatePath[k]));
-			templateImage = Binarization(templateImage);
-			cropImage = extractRegion(clabel[i].p[0], clabel[i].p[1], buffer);
-			cropImage->Resample(64, 64);
-
-			if(templateMatching(templateImage, cropImage)){
-				marker = clabel[i];
-				degree = k;
-				break;
-			}
-		}
-		if(degree != -1)
-			break;
-	}
-
-	m_pRender->Resample(marker.p[1].x - marker.p[0].x, marker.p[1].y - marker.p[0].y);
-
-	if(degree != -1){
-		switch(degree){
-		case 1:
-			m_pRender->RotateLeft(m_pRender);
-			break;
-		case 2:
-			m_pRender->RotateRight(m_pRender);
-			break;
-		case 3:
-			m_pRender->Rotate180(m_pRender);
-			break;
-		default:
-			break;
-		}
-		dst->MixFrom(*m_pRender, marker.p[0].x, marker.p[0].y);
-	}
-	delete buffer;
-	delete cropImage;
-	delete templateImage;
-	return dst;
-}
-*/
-
-/*
-BOOL CCxImageARDoc::templateMatching(CxImage* src, CxImage* dst) {
-	int width = src->GetWidth();
-	int height = src->GetHeight();
-
-	RGBQUAD srccolor, dstcolor, srccolorm90, srccolorp90, srccolor180;
-	CxImage* src2 = Binarization(Grayscale(src));
-	CxImage* dst2 = Binarization(Grayscale(dst));
-	double total = width * height;
-	int correct = 0, correct1 = 0, correct2 = 0, correct3 = 0;
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			srccolor = src2->GetPixelColor(x, y);
-			dstcolor = dst2->GetPixelColor(x, y);
-			srccolorm90 = src2->GetPixelColor(y, height - x);
-			srccolorp90 = src2->GetPixelColor(width - y, x);
-			srccolor180 = src2->GetPixelColor(width - x, height - y);
-			int srcintensity = (srccolor.rgbBlue + srccolor.rgbRed + srccolor.rgbGreen) / 3;
-			int dstintensity = (dstcolor.rgbBlue + dstcolor.rgbRed + dstcolor.rgbGreen) / 3;
-			if (srcintensity <= dstintensity + 50 && srcintensity >= dstintensity - 50) {
-				correct++;
-			}
-			srcintensity = (srccolorm90.rgbBlue + srccolorm90.rgbRed + srccolorm90.rgbGreen) / 3;
-			if (srcintensity <= dstintensity + 50 && srcintensity >= dstintensity - 50) {
-				correct1++;
-			}
-			srcintensity = (srccolorp90.rgbBlue + srccolorp90.rgbRed + srccolorp90.rgbGreen) / 3;
-			if (srcintensity <= dstintensity + 50 && srcintensity >= dstintensity - 50) {
-				correct2++;
-			}
-			srcintensity = (srccolor180.rgbBlue + srccolor180.rgbRed + srccolor180.rgbGreen) / 3;
-			if (srcintensity <= dstintensity + 50 && srcintensity >= dstintensity - 50) {
-				correct3++;
-			}
-		}
-	}
-	if ((double)correct / total > 0.85 || (double)correct1 / total > 0.85 || (double)correct2 / total > 0.85 || (double)correct3 / total > 0.85) {
-		return TRUE;
-	}
-	else {
-		return FALSE;
-	}
-}
-*/
-
 	cv::Mat Image::resizeNumber(cv::Mat& input) noexcept
 	{
 		cv::Mat output;
@@ -409,44 +327,41 @@ BOOL CCxImageARDoc::templateMatching(CxImage* src, CxImage* dst) {
 
 	int Image::templateMatching(cv::Mat &input) noexcept
 	{
-		// template function to match the font and return the correct number
-		Vec3b* pixel;
-		const char* paths[10] = {
-					"../templates/0.png",
-					"../templates/1.png",
-					"../templates/2.png",
-					"../templates/3.png",
-					"../templates/4.png",
-					"../templates/5.png",
-					"../templates/6.png",
-					"../templates/7.png",
-					"../templates/8.png",
-					"../templates/9.png"
-		};
-		cv::Mat template_image[10] = { 
-			cv::imread(paths[0], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[1], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[2], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[3], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[4], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[5], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[6], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[7], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[8], cv::IMREAD_GRAYSCALE),
-			cv::imread(paths[9], cv::IMREAD_GRAYSCALE)
-		};
-		int crop_width = template_image[0].cols; //32
-		int crop_height = template_image[0].rows; //49
+		int crop_width = _template_image[0].cols; //32
+		int crop_height = _template_image[0].rows; //49
+		std::vector<int> sumB(10, 0);
+		std::vector<int> sumW(10, 0);
+		int nBlack = 0;
+		std::vector<int> nBlack2(10, 0);
+		std::vector<int> nWhite2(10, 0);
+		std::vector<float> ratio(10, 0);
 
-		for (int i = 0; i < input.rows; ++i) {
-			pixel = input.ptr<Vec3b>(i);
-			for (int j = 0; j < input.cols; ++j) {
-				
+		for (int k = 0; k < 10; k++) {
+			for (int i = 0; i < input.rows && i < crop_height; ++i) {
+				auto pixel = input.ptr<Vec3b>(i);
+				auto pixel2 = (_template_image[k].ptr<uchar>)(i);
+				for (int j = 0; j < input.cols && j < crop_width; ++j) {
+					if ((pixel[j][0] < 127 && pixel2[j] < 127)) {
+						sumB[k]++;
+					}
+					if ((pixel[j][0] > 127 && pixel2[j] > 127)) {
+						sumW[k]++;
+					}
+					if ((pixel2[j] < 127)) {
+						nBlack2[k]++;
+					}
+					else {
+						nWhite2[k]++;
+					}
+				}
 			}
 		}
-		imshow("input", input);
-
-		return crop_height;
+		float total = crop_height * crop_width;
+		for (int i = 0; i < 10; i++) {
+			if (nBlack2[i] && nWhite2[i])
+				ratio[i] = (float)sumB[i] / (float)total + (float)sumW[i] / (float)total;
+		}
+		return std::max_element(ratio.begin(), ratio.end()) - ratio.begin();
 	}
 
 	void Image::edgeDetection() noexcept
